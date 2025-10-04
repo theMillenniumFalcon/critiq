@@ -1,0 +1,2 @@
+## Crtiq
+A self-directed AI-powered system for examining GitHub pull requests. It features an intelligent agent capable of autonomously planning and conducting code reviews, handles review tasks asynchronously via Celery, and communicates with developers through a well-defined API interface.
