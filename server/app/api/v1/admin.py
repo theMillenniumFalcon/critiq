@@ -3,6 +3,7 @@ from typing import Dict, Any
 
 router = APIRouter(prefix="/api/v1/admin")
 
+
 @router.get("/tasks")
 async def list_tasks(request: Request):
     tasks: Dict[str, Any] = request.app.state.tasks

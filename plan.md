@@ -96,6 +96,7 @@ This `plan.md` is intended as a living checklist: implement the minimal slices f
 ├── infra/                      # docker-compose, k8s manifests, etc.
 │   └── docker-compose.yml
 ├── server/                     # FastAPI + Celery agent server
+│   ├── server.py               # Server entrypoint
 │   ├── app/
 │   │   ├── __init__.py
 │   │   ├── main.py             # app factory, include routers
@@ -119,7 +120,7 @@ This `plan.md` is intended as a living checklist: implement the minimal slices f
 │   │   └── utils/              # logging, redis client, helpers
 │   ├── tests/                  # server unit & integration tests
 │   ├── Dockerfile
-│   ├── pyproject.toml or requirements.txt
+│   ├── pyproject.toml
 │   ├── run_dev.py              # convenience to run uvicorn
 │   └── run_celery.py
 ├── client/                     # Vite + React client app
