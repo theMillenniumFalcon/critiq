@@ -7,7 +7,7 @@ from contextlib import contextmanager, asynccontextmanager
 from typing import Generator, AsyncGenerator
 
 from app.config import settings
-from app.models import Base
+from server.app.db.models import Base
 
 # Sync database engine
 engine = create_engine(

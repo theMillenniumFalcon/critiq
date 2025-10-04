@@ -1,18 +1,9 @@
 from fastapi import APIRouter, Request, HTTPException
-from pydantic import BaseModel
 from typing import Dict, Any
 import uuid
+from app.schemas import AnalyzeRequest, AnalyzeResponse
 
 router = APIRouter(prefix="/api/v1")
-
-class AnalyzeRequest(BaseModel):
-    repo_url: str
-    pr_number: int
-
-
-class AnalyzeResponse(BaseModel):
-    task_id: str
-    status: str
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
