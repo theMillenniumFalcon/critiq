@@ -1,9 +1,8 @@
 from datetime import datetime
-from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Dict, Any
 import uuid
-from app.schemas import AnalyzeRequest, AnalyzeResponse, TaskStatusResponse
+from app.schemas import AnalyzeRequest, AnalyzeResponse, TaskStatusResponse, AnalysisResults
 from app.db.database import get_db
 from app.db.models import TaskStatus, AnalysisTask
 from app.utils.logging import get_logger
@@ -121,11 +120,56 @@ async def get_status(task_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/results/{task_id}")
-async def results(task_id: str, request: Request):
-    tasks: Dict[str, Any] = request.app.state.tasks
-    task = tasks.get(task_id)
-    if not task:
-        raise HTTPException(status_code=404, detail="task not found")
-    if task.get("results") is None:
-        return {"task_id": task_id, "results": None}
-    return {"task_id": task_id, "results": task.get("results")}
+async def results(task_id: str, db: AsyncSession = Depends(get_db)):
+    """
+    Retrieve the analysis results for a completed task.
+    
+    Returns detailed analysis results including issues found, suggestions,
+    and summary statistics.
+    """
+    try:
+        # Query task from database
+        result = await db.execute(
+            select(AnalysisTask).where(AnalysisTask.task_id == task_id)
+        )
+        task = result.scalar_one_or_none()
+        
+        if not task:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Task {task_id} not found"
+            )
+        
+        if task.status != TaskStatus.COMPLETED:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Task {task_id} is not completed. Current status: {task.status.value}"
+            )
+        
+        if not task.results:
+            raise HTTPException(
+                status_code=404,
+                detail=f"No results found for task {task_id}"
+            )
+        
+        # Return structured results
+        return AnalysisResults(
+            task_id=task_id,
+            status=task.status,
+            repository=task.repo_url,
+            pr_number=task.pr_number,
+            files=task.results.get("files", []),
+            summary=task.results.get("summary", {}),
+            metadata=task.results.get("metadata", {}),
+            created_at=task.created_at,
+            completed_at=task.completed_at
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get results for task {task_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve results: {str(e)}"
+        )
