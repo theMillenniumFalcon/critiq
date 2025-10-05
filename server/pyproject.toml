@@ -13,4 +13,5 @@ dependencies = [
     "structlog>=25.4.0",
     "pydantic-settings>=2.11.0",
     "psycopg2-binary>=2.9.10",
+    "celery>=5.5.3",
 ]

@@ -21,29 +21,16 @@ class Settings(BaseSettings):
     
     # Database Configuration
     database_url: str = Field(..., description="Database connection URL")
+
+    # Celery Configuration
+    celery_broker_url: str = Field(default="redis://localhost:6379/1", description="Celery broker URL")
+    celery_result_backend: str = Field(default="redis://localhost:6379/2", description="Celery result backend URL")
     
     model_config = SettingsConfigDict(
-        env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
     )
-    
-    def __init__(self, **data):
-        # Determine which env file to load based on ENV variable
-        env = os.getenv('ENV', 'development')
-        env_file = f".env.{env}"
-        
-        # Check if environment-specific file exists, fallback to .env
-        if os.path.exists(env_file):
-            self.__class__.model_config = SettingsConfigDict(
-                env_file=env_file,
-                env_file_encoding="utf-8",
-                case_sensitive=False,
-                extra="ignore",
-            )
-        
-        super().__init__(**data)
     
     @property
     def is_development(self) -> bool:
@@ -58,8 +45,14 @@ class Settings(BaseSettings):
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
-    """Get cached settings instance."""
-    return Settings()
+    """Get cached settings instance with environment-specific config."""
+    env = os.getenv('ENV', 'development')
+    env_file = f".env.{env}"
+    
+    # Check if environment-specific file exists, fallback to .env
+    if os.path.exists(env_file):
+        return Settings(_env_file=env_file)
+    return Settings(_env_file='.env')
 
 
 # Create global settings instance

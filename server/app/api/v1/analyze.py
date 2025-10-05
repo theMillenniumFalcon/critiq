@@ -1,4 +1,3 @@
-from datetime import datetime
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
@@ -8,6 +7,7 @@ from app.db.models import TaskStatus, AnalysisTask
 from app.utils.logging import get_logger
 from sqlalchemy import select
 from app.utils.task_helpers import get_current_stage, estimate_completion_time
+from app.celery_app import analyze_task
 
 router = APIRouter(prefix="/api/v1")
 
@@ -43,6 +43,17 @@ async def analyze(request: AnalyzeRequest, db: AsyncSession = Depends(get_db)):
         db.session.add(task)
         await db.session.commit()
         await db.session.refresh(task)
+
+        # Start Celery task
+        celery_task = analyze_task.delay(
+            task_id=task_id,
+            repo_url=str(request.repo_url),
+            pr_number=request.pr_number,
+            github_token=request.github_token,
+            analysis_types=request.analysis_types or ["style", "bug", "security", "performance"]
+        )
+        
+        logger.info(f"Celery task {celery_task.id} started for PR analysis {task_id}")
 
         return AnalyzeResponse(
             task_id=task_id,
