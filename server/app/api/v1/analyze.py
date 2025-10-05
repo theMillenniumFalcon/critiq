@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/v1")
 
 logger = get_logger(__name__)
 
-@router.post("/analyze", response_model=AnalyzeResponse)
+@router.post("/analyze", response_model=AnalyzeResponse, tags=["Analysis"])
 async def analyze(request: AnalyzeRequest, db: AsyncSession = Depends(get_db)):
     """
     Submit a GitHub pull request for analysis.
@@ -59,7 +59,7 @@ async def analyze(request: AnalyzeRequest, db: AsyncSession = Depends(get_db)):
         )
 
 
-@router.get("/status/{task_id}")
+@router.get("/status/{task_id}", response_model=TaskStatusResponse, tags=["Analysis"])
 async def get_status(task_id: str, db: AsyncSession = Depends(get_db)):
     """
     Check the status of an analysis task.
@@ -119,7 +119,7 @@ async def get_status(task_id: str, db: AsyncSession = Depends(get_db)):
         )
 
 
-@router.get("/results/{task_id}")
+@router.get("/results/{task_id}", response_model=AnalysisResults, tags=["Analysis"])
 async def results(task_id: str, db: AsyncSession = Depends(get_db)):
     """
     Retrieve the analysis results for a completed task.
