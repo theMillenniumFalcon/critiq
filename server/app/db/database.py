@@ -6,8 +6,8 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from contextlib import contextmanager, asynccontextmanager
 from typing import Generator, AsyncGenerator
 
-from app.config import settings
-from server.app.db.models import Base
+from app.config.settings import settings
+from app.db.models import Base
 
 # Sync database engine
 engine = create_engine(

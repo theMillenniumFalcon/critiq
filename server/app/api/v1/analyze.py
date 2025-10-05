@@ -1,30 +1,60 @@
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Dict, Any
 import uuid
 from app.schemas import AnalyzeRequest, AnalyzeResponse
+from app.db.database import get_db
+from app.db.models import TaskStatus, AnalysisTask
+from app.utils.logging import get_logger
 
 router = APIRouter(prefix="/api/v1")
 
+logger = get_logger(__name__)
 
 @router.post("/analyze", response_model=AnalyzeResponse)
-async def analyze_pr(request: Request, body: AnalyzeRequest):
-    """Create a simple analysis task (in-memory) and return a task id.
-
-    This is a stub that enqueues no real work; Celery integration comes later.
+async def analyze_pr(request: AnalyzeRequest, db: AsyncSession = Depends(get_db)):
     """
-    task_id = str(uuid.uuid4())
-    task = {
-        "task_id": task_id,
-        "repo_url": body.repo_url,
-        "pr_number": body.pr_number,
-        "status": "queued",
-        "results": None,
-    }
+    Submit a GitHub pull request for analysis.
+    
+    This endpoint accepts a GitHub repository URL and PR number, then starts
+    an asynchronous analysis task using Celery.
+    """
+    try:
+        # Generate unique task ID
+        task_id = str(uuid.uuid4())
+        
+        logger.info(f"Starting PR analysis for {request.repo_url}/pull/{request.pr_number}")
+        
+        # Create task record in database
+        task = AnalysisTask(
+            task_id=task_id,
+            repo_url=str(request.repo_url),
+            pr_number=request.pr_number,
+            status=TaskStatus.PENDING,
+            metadata={
+                "analysis_types": request.analysis_types,
+                "priority": request.priority,
+                "github_token_provided": request.github_token is not None
+            }
+        )
 
-    # store in app state tasks dict
-    request.app.state.tasks[task_id] = task
+        db.session.add(task)
+        await db.session.commit()
+        await db.session.refresh(task)
 
-    return {"task_id": task_id, "status": "queued"}
+        return AnalyzeResponse(
+            task_id=task_id,
+            status=TaskStatus.PENDING,
+            message=f"Analysis started for PR #{request.pr_number}",
+            estimated_completion_time="5-10 minutes"
+        )
+        
+    except Exception as e:
+        logger.error(f"Failed to start PR analysis: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to start analysis: {str(e)}"
+        )
 
 
 @router.get("/status/{task_id}")
