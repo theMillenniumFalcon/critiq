@@ -34,3 +34,16 @@ class AnalyzeResponse(BaseModel):
     message: str = Field(..., description="Status message")
     estimated_completion_time: Optional[str] = Field(None, description="Estimated completion time")
 
+
+class TaskStatusResponse(BaseModel):
+    """Response model for task status check."""
+    task_id: str
+    status: TaskStatus
+    progress: Dict[str, Any] = Field(default_factory=dict)
+    current_file: Optional[str] = None
+    processed_files: int = 0
+    total_files: int = 0
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    estimated_completion: Optional[str] = None
+    error_message: Optional[str] = None
