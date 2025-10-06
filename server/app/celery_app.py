@@ -4,7 +4,7 @@ from celery import Celery
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
-from app.config import settings
+from app.config.settings import settings
 from app.utils.logging import get_logger
 from app.agents.coordinator import AnalysisCoordinator
 from app.utils.task_helpers import update_task_status
