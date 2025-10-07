@@ -97,14 +97,6 @@ class BaseAgent(ABC):
         """Parse the LLM response into structured results."""
         pass
     
-    def create_prompt_template(self) -> ChatPromptTemplate:
-        """Create the prompt template for this agent."""
-        return ChatPromptTemplate.from_messages([
-            ("system", self.get_system_prompt()),
-            ("human", self.get_analysis_prompt()),
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
-        ])
-    
     async def analyze_file(
         self, 
         file_path: str, 
