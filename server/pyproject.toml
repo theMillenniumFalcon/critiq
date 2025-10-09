@@ -17,4 +17,7 @@ dependencies = [
     "langchain-core>=0.3.78",
     "langchain-anthropic>=0.3.21",
     "pygithub>=2.8.1",
+    "redis>=6.4.0",
+    "openai>=2.2.0",
+    "scikit-learn>=1.7.2",
 ]

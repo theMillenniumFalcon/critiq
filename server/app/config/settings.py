@@ -4,6 +4,7 @@ Supports environment-specific configuration files.
 """
 import os
 from functools import lru_cache
+from typing import Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -25,6 +26,17 @@ class Settings(BaseSettings):
     # Celery Configuration
     celery_broker_url: str = Field(default="redis://localhost:6379/1", description="Celery broker URL")
     celery_result_backend: str = Field(default="redis://localhost:6379/2", description="Celery result backend URL")
+
+    # Redis Configuration
+    redis_url: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
+
+    # AI Configuration
+    openai_api_key: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
+
+    # Vector Storage Configuration
+    embedding_model: str = Field(default="text-embedding-3-small", env="EMBEDDING_MODEL")
+    vector_dimension: int = Field(default=1536, env="VECTOR_DIMENSION")
+    similarity_threshold: float = Field(default=0.85, env="SIMILARITY_THRESHOLD")
     
     model_config = SettingsConfigDict(
         env_file_encoding="utf-8",
