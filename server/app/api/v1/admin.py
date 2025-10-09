@@ -7,7 +7,7 @@ from app.services.vector_cache import vector_cache
 from app.utils.redis_client import redis_client
 from app.services.github_service import GitHubService
 from app.db.database import get_db
-from app.db.models import AnalysisTask
+from app.db.models import AnalysisTask, TaskStatus
 from app.utils.logging import get_logger
 
 router = APIRouter(prefix="/api/v1/admin", tags=["Admin"])
@@ -173,4 +173,87 @@ async def cleanup_cache(days_old: int = 30):
         raise HTTPException(
             status_code=500,
             detail=f"Failed to cleanup cache: {str(e)}"
+        )
+
+
+@router.get("/tasks/stats", tags=["Admin"])
+async def get_task_statistics(db: AsyncSession = Depends(get_db)):
+    """
+    Get analysis task statistics.
+    
+    This endpoint provides comprehensive statistics about analysis tasks,
+    including counts by status, recent task information, and performance metrics
+    such as average processing time.
+    """
+    try:
+        logger.info("Fetching task statistics")
+        
+        # Count tasks by status
+        status_counts = {}
+        for status in TaskStatus:
+            result = await db.execute(
+                select(func.count(AnalysisTask.id)).where(
+                    AnalysisTask.status == status
+                )
+            )
+            status_counts[status.value] = result.scalar()
+        
+        logger.info(f"Task status counts calculated: {sum(status_counts.values())} total tasks")
+        
+        # Get recent task metrics
+        recent_tasks_result = await db.execute(
+            select(AnalysisTask).order_by(AnalysisTask.created_at.desc()).limit(10)
+        )
+        recent_tasks = recent_tasks_result.scalars().all()
+        
+        # Calculate average processing time for completed tasks
+        completed_tasks_result = await db.execute(
+            select(AnalysisTask).where(
+                AnalysisTask.status == TaskStatus.COMPLETED,
+                AnalysisTask.started_at.isnot(None),
+                AnalysisTask.completed_at.isnot(None)
+            ).limit(50)
+        )
+        completed_tasks = completed_tasks_result.scalars().all()
+        
+        avg_processing_time = 0
+        if completed_tasks:
+            total_time = sum(
+                (task.completed_at - task.started_at).total_seconds()
+                for task in completed_tasks
+                if task.started_at and task.completed_at
+            )
+            avg_processing_time = total_time / len(completed_tasks)
+        
+        logger.info(f"Average processing time calculated: {avg_processing_time:.2f} seconds")
+        
+        return {
+            "status_counts": status_counts,
+            "total_tasks": sum(status_counts.values()),
+            "recent_tasks": [
+                {
+                    "task_id": task.task_id,
+                    "status": task.status.value,
+                    "repo_url": task.repo_url,
+                    "pr_number": task.pr_number,
+                    "created_at": task.created_at.isoformat(),
+                    "processing_time": (
+                        (task.completed_at - task.started_at).total_seconds()
+                        if task.started_at and task.completed_at
+                        else None
+                    )
+                }
+                for task in recent_tasks
+            ],
+            "metrics": {
+                "average_processing_time_seconds": round(avg_processing_time, 2),
+                "average_processing_time_minutes": round(avg_processing_time / 60, 2)
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get task statistics: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get task stats: {str(e)}"
         )
