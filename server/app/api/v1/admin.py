@@ -257,3 +257,47 @@ async def get_task_statistics(db: AsyncSession = Depends(get_db)):
             status_code=500,
             detail=f"Failed to get task stats: {str(e)}"
         )
+
+
+@router.get("/system/info", tags=["Admin"])
+async def get_system_info():
+    """
+    Get system information and configuration.
+    
+    This endpoint provides details about the system version, environment,
+    enabled features, and configuration settings including supported languages
+    and caching parameters.
+    """
+    try:
+        logger.info("Fetching system information")
+        
+        system_info = {
+            "version": "1.0.0",
+            "environment": "development",  # This could be set from env var
+            "features": {
+                "vector_caching": bool(vector_cache.openai_client),
+                "github_integration": True,
+                "multiple_analysis_types": True,
+                "async_processing": True
+            },
+            "configuration": {
+                "embedding_model": vector_cache.embedding_model,
+                "vector_dimension": vector_cache.vector_dimension,
+                "similarity_threshold": vector_cache.similarity_threshold,
+                "supported_languages": [
+                    "python", "javascript", "typescript", "java", "cpp", "c",
+                    "csharp", "go", "rust", "php", "ruby", "swift", "kotlin"
+                ]
+            }
+        }
+        
+        logger.info("System information retrieved successfully")
+        
+        return system_info
+        
+    except Exception as e:
+        logger.error(f"Failed to get system information: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get system info: {str(e)}"
+        )
