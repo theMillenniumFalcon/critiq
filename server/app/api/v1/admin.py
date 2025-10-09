@@ -116,3 +116,29 @@ async def detailed_health_check(db: AsyncSession = Depends(get_db)):
             status_code=500,
             detail=f"Health check failed: {str(e)}"
         )
+
+
+@router.get("/cache/stats", tags=["Admin"])
+async def get_cache_statistics():
+    """
+    Get vector cache usage statistics.
+    
+    This endpoint provides comprehensive statistics about the vector cache,
+    including total entries, cache size, hit rate, and breakdowns by language
+    and analysis type.
+    """
+    try:
+        logger.info("Fetching cache statistics")
+        
+        stats = vector_cache.get_cache_statistics()
+        
+        logger.info(f"Cache statistics retrieved: {stats.get('total_entries', 0)} entries")
+        
+        return stats
+        
+    except Exception as e:
+        logger.error(f"Failed to get cache statistics: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to get cache stats: {str(e)}"
+        )
