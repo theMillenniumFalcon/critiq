@@ -142,3 +142,35 @@ async def get_cache_statistics():
             status_code=500,
             detail=f"Failed to get cache stats: {str(e)}"
         )
+
+
+@router.post("/cache/cleanup", tags=["Admin"])
+async def cleanup_cache(days_old: int = 30):
+    """
+    Clean up old cache entries.
+    
+    This endpoint removes cache entries older than the specified number of days
+    to free up storage space and maintain cache performance.
+    
+    Args:
+        days_old: Number of days threshold for cleanup (default: 30)
+    """
+    try:
+        logger.info(f"Starting cache cleanup for entries older than {days_old} days")
+        
+        removed_count = vector_cache.cleanup_old_entries(days_old)
+        
+        logger.info(f"Cache cleanup completed: {removed_count} entries removed")
+        
+        return {
+            "message": f"Successfully cleaned up {removed_count} old cache entries",
+            "removed_entries": removed_count,
+            "days_threshold": days_old
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to cleanup cache: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to cleanup cache: {str(e)}"
+        )
