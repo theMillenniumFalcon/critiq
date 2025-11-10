@@ -14,7 +14,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -132,8 +131,10 @@ Desktop.ini
 .vscode/
 
 # Node (client)
+client/.next/
 client/node_modules/
 client/dist/
+next-env.d.ts
 
 # Logs
 *.log
